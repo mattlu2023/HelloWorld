@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: ad-bi-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: ad_bi_system
+      MYSQL_USER: adbi
+      MYSQL_PASSWORD: adbi123
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    networks:
+      - ad-bi-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Go 后端服务
+  backend:
+    build:
+      context: ./backend-go
+      dockerfile: Dockerfile
+    container_name: ad-bi-backend
+    restart: always
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: root123
+      DB_NAME: ad_bi_system
+      PORT: 8080
+      GIN_MODE: release
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ad-bi-network
+    volumes:
+      - ./backend-go:/app
+
+  # Node.js 中间层
+  middleware:
+    build:
+      context: ./middleware-node
+      dockerfile: Dockerfile
+    container_name: ad-bi-middleware
+    restart: always
+    environment:
+      PORT: 3001
+      GO_BACKEND_URL: http://backend:8080
+      NODE_ENV: development
+    ports:
+      - "3001:3001"
+    depends_on:
+      - backend
+    networks:
+      - ad-bi-network
+    volumes:
+      - ./middleware-node:/app
+      - /app/node_modules
+
+  # Vue 前端
+  frontend:
+    build:
+      context: ./frontend-vue
+      dockerfile: Dockerfile
+    container_name: ad-bi-frontend
+    restart: always
+    environment:
+      VITE_API_BASE_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend-vue:/app
+      - /app/node_modules
+    depends_on:
+      - middleware
+    networks:
+      - ad-bi-network
+
+networks:
+  ad-bi-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
