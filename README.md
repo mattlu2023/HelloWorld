@@ -1,123 +1,300 @@
-# 表单提交系统
+# 广告分析 BI 系统
 
-一个简单实用的表单提交和查看系统，支持用户提交信息并实时查看所有提交记录。
+一个功能完整的广告数据分析 BI 系统，包含数据看板、广告投放管理、用户行为分析和报表导出功能。
 
-## 🚀 功能特性
+## 🏗️ 技术架构
 
-- ✅ 表单提交：姓名、性别、邮箱、留言内容
-- ✅ 实时查看：展示所有已提交的表单记录
-- ✅ 数据持久化：使用 SQLite 数据库存储数据
-- ✅ 美观界面：渐变色设计和响应式布局
-- ✅ 无需登录：开放提交和查看
-
-## 🛠️ 技术栈
-
-**后端:**
-- Node.js
-- Express.js
-- SQLite3
-
-**前端:**
-- HTML5
-- CSS3
-- JavaScript (原生)
-
-## 📦 安装步骤
-
-### 1. 克隆项目
-```bash
-git clone <你的仓库地址>
-cd HelloWorld
+```
+┌─────────────┐      ┌──────────────┐      ┌─────────────┐      ┌──────────┐
+│  Vue 3      │ ───► │  Node.js     │ ───► │  Go + Gin   │ ───► │  MySQL   │
+│  前端界面   │      │  中间层      │      │  后端 API    │      │  数据库  │
+└─────────────┘      └──────────────┘      └─────────────┘      └──────────┘
 ```
 
-### 2. 安装依赖
-```bash
-npm install
-```
+### 技术栈
 
-### 3. 启动服务器
-```bash
-npm start
-```
-
-### 4. 访问网站
-打开浏览器访问：http://localhost:3000
+- **前端**: Vue 3 + Vite + Element Plus + ECharts
+- **中间层**: Node.js + Express
+- **后端**: Go + Gin Framework
+- **数据库**: MySQL 8.0+
 
 ## 📁 项目结构
 
 ```
-HelloWorld/
-├── server.js              # 后端服务器
-├── public/
-│   └── index.html         # 前端页面
-├── database.sqlite        # SQLite 数据库 (运行时自动创建)
-├── package.json           # 项目配置
-├── .gitignore            # Git 忽略文件
-└── README.md             # 项目说明
+ad-bi-system/
+├── database/              # 数据库脚本
+│   └── init.sql          # MySQL 初始化脚本
+├── backend-go/           # Go 后端服务
+│   ├── main.go
+│   ├── config/
+│   ├── handlers/
+│   ├── middleware/
+│   └── models/
+├── middleware-node/      # Node.js 中间层
+│   ├── server.js
+│   └── package.json
+├── frontend-vue/         # Vue 前端
+│   ├── src/
+│   │   ├── views/
+│   │   ├── components/
+│   │   ├── api/
+│   │   └── assets/
+│   └── package.json
+└── README.md
 ```
 
-## 🔌 API 接口
+## 🚀 快速开始
 
-### 提交表单
+### 1. 数据库配置
+
+```bash
+# 登录 MySQL
+mysql -u root -p
+
+# 执行初始化脚本
+source database/init.sql
 ```
-POST /api/submit
-Content-Type: application/json
 
+### 2. 启动 Go 后端
+
+```bash
+cd backend-go
+
+# 安装依赖
+go mod download
+
+# 配置环境变量（可选）
+export DB_HOST=localhost
+export DB_PORT=3306
+export DB_USER=root
+export DB_PASSWORD=your_password
+export DB_NAME=ad_bi_system
+export PORT=8080
+
+# 运行服务
+go run main.go
+```
+
+Go 后端将在 `http://localhost:8080` 启动
+
+### 3. 启动 Node.js 中间层
+
+```bash
+cd middleware-node
+
+# 安装依赖
+npm install
+
+# 创建环境配置
+cp .env.example .env
+
+# 运行服务
+npm start
+```
+
+中间层将在 `http://localhost:3001` 启动
+
+### 4. 启动 Vue 前端
+
+```bash
+cd frontend-vue
+
+# 安装依赖
+npm install
+
+# 运行开发服务器
+npm run dev
+```
+
+前端将在 `http://localhost:3000` 启动
+
+## 📊 功能模块
+
+### ✅ 已实现功能
+
+1. **用户认证**
+   - 登录/注册
+   - JWT Token 认证
+   - 路由守卫
+
+2. **数据看板**
+   - 核心指标展示（曝光、点击、转化、收入）
+   - 每日趋势图表
+   - 转化漏斗可视化
+
+3. **广告活动管理**
+   - 活动列表查询
+   - 创建/编辑/删除活动
+   - 活动状态管理
+
+4. **广告单元管理**
+   - 广告单元 CRUD
+   - 多种广告类型支持
+   - 投放位置管理
+
+5. **数据统计 API**
+   - 概览数据统计
+   - 每日趋势分析
+   - 转化漏斗数据
+   - 活动维度统计
+
+### 🔧 待完善功能
+
+- [ ] 广告活动完整的 CRUD 界面
+- [ ] 广告单元管理界面
+- [ ] 用户行为分析详情页
+- [ ] 报表导出功能（Excel/PDF）
+- [ ] 实时数据更新
+- [ ] 权限管理系统
+- [ ] 数据导入功能
+
+## 🔌 API 接口文档
+
+### 认证接口
+
+```bash
+POST /api/v1/login
 {
-  "name": "张三",
-  "gender": "男",
-  "email": "zhangsan@example.com",
-  "message": "这是留言内容"
+  "username": "admin",
+  "password": "admin123"
+}
+
+POST /api/v1/register
+{
+  "username": "newuser",
+  "password": "password123"
 }
 ```
 
-### 获取所有提交
+### 广告活动接口
+
+```bash
+GET /api/v1/campaigns           # 获取活动列表
+GET /api/v1/campaigns/:id       # 获取活动详情
+POST /api/v1/campaigns          # 创建活动
+PUT /api/v1/campaigns/:id       # 更新活动
+DELETE /api/v1/campaigns/:id    # 删除活动
 ```
-GET /api/submissions
+
+### 数据统计接口
+
+```bash
+GET /api/v1/stats/overview      # 数据概览
+GET /api/v1/stats/daily-trend   # 每日趋势
+GET /api/v1/stats/funnel        # 转化漏斗
+GET /api/v1/stats/campaign/:id  # 活动统计
 ```
 
-### 获取单条提交
+## 📝 默认账号
+
+- 用户名：`admin`
+- 密码：`admin123`
+
+## ⚙️ 环境配置
+
+### Go 后端环境变量
+
+```bash
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=ad_bi_system
+PORT=8080
 ```
-GET /api/submissions/:id
+
+### Node.js 中间层环境变量
+
+```bash
+PORT=3001
+GO_BACKEND_URL=http://localhost:8080
+NODE_ENV=development
 ```
 
-## 📝 数据库结构
+### Vue 前端配置
 
-**表名:** `submissions`
+在 `vite.config.js` 中配置代理：
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INTEGER | 主键，自动递增 |
-| name | TEXT | 姓名 |
-| gender | TEXT | 性别 |
-| email | TEXT | 邮箱 |
-| message | TEXT | 留言内容 |
-| created_at | DATETIME | 提交时间 |
+```javascript
+server: {
+  port: 3000,
+  proxy: {
+    '/api': {
+      target: 'http://localhost:3001',
+      changeOrigin: true
+    }
+  }
+}
+```
 
-## ⚙️ 配置说明
+## 🎨 界面预览
 
-- **端口号:** 3000 (可在 `server.js` 中修改)
-- **数据库文件:** `database.sqlite` (自动创建)
-- **静态文件目录:** `public/`
+### 数据看板
+- 核心指标卡片（曝光量、点击量、转化量、收入）
+- 每日趋势折线图
+- 转化漏斗图
 
-## 🔒 安全提示
+### 广告活动管理
+- 活动列表表格
+- 活动创建/编辑表单
+- 活动状态筛选
 
-⚠️ **注意:** 当前版本没有身份验证和权限控制，适合内部测试或学习使用。
+### 广告单元管理
+- 广告单元列表
+- 单元类型筛选
+- 投放位置管理
 
-如需在生产环境使用，建议添加:
-- 用户认证系统
-- 输入验证和 XSS 防护
-- CSRF 保护
-- 数据备份机制
-- HTTPS 加密
+## 🔒 安全说明
+
+1. **生产环境必须修改默认密码**
+2. **启用 HTTPS**
+3. **配置 CORS 白名单**
+4. **实现请求限流**
+5. **添加日志记录**
+6. **定期备份数据库**
+
+## 📦 部署建议
+
+### Docker 部署（推荐）
+
+创建 `docker-compose.yml`:
+
+```yaml
+version: '3'
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: your_password
+      MYSQL_DATABASE: ad_bi_system
+  
+  backend:
+    build: ./backend-go
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+  
+  frontend:
+    build: ./frontend-vue
+    ports:
+      - "3000:3000"
+```
+
+### 生产环境部署
+
+1. **前端**: 构建静态文件，使用 Nginx 托管
+2. **后端**: 编译为二进制文件，使用 systemd 或 Supervisor 管理
+3. **数据库**: 配置主从复制，定期备份
+4. **监控**: 集成 Prometheus + Grafana
+
+## 🤝 贡献指南
+
+欢迎提交 Issue 和 Pull Request！
 
 ## 📄 许可证
 
-ISC
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
+MIT License
 
 ## 📧 联系方式
 

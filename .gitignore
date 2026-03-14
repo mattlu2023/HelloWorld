@@ -1,23 +1,38 @@
-# 依赖包
+# 依赖
 node_modules/
-package-lock.json
+vendor/
 
-# 数据库文件
+# 数据库
 *.sqlite
 *.db
+
+# 环境配置
+.env
+.env.local
+
+# 编译输出
+dist/
+build/
+*.exe
+*.app
 
 # 系统文件
 .DS_Store
 Thumbs.db
 
-# 日志文件
+# 日志
 *.log
-npm-debug.log*
+logs/
 
-# 环境变量
-.env
-.env.local
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Go
+backend-go/go.sum
 
 # 临时文件
 *.tmp
-*.swp
+*.cache
