@@ -249,6 +249,10 @@
             </div>
           </div>
           <div class="form-group">
+            <label for="age">年龄 *</label>
+            <input type="number" id="age" name="age" required placeholder="请输入您的年龄" min="1" max="150">
+          </div>
+          <div class="form-group">
             <label for="message">留言内容 *</label>
             <textarea id="message" name="message" required placeholder="请输入您想说的话..."></textarea>
           </div>
@@ -279,6 +283,7 @@
       const formData = {
         name: document.getElementById('name').value,
         gender: selectedGender ? selectedGender.value : '',
+        age: document.getElementById('age').value,
         email: document.getElementById('email').value,
         message: document.getElementById('message').value
       };
@@ -339,7 +344,7 @@
 
       submissionsList.innerHTML = submissions.map(item => `
         <div class="submission-item">
-          <h3>${escapeHtml(item.name)} ${item.gender ? `<span style="font-size: 0.8em; color: #999; margin-left: 10px;">(${item.gender})</span>` : ''}</h3>
+          <h3>${escapeHtml(item.name)} ${item.gender ? `<span style="font-size: 0.8em; color: #999; margin-left: 10px;">(${item.gender}${item.age ? `, ${item.age}岁` : ''})</span>` : ''}</h3>
           <p><strong>邮箱:</strong> ${escapeHtml(item.email)}</p>
           <p><strong>留言:</strong> ${escapeHtml(item.message)}</p>
           <div class="meta">提交时间：${formatDate(item.created_at)}</div>

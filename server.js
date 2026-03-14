@@ -21,6 +21,7 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       gender TEXT NOT NULL,
+      age INTEGER,
       email TEXT NOT NULL,
       message TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -29,9 +30,9 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
         console.error('创建表失败:', err.message);
       } else {
         console.log('数据库表已准备就绪');
-        db.run('ALTER TABLE submissions ADD COLUMN gender TEXT', (err) => {
+        db.run('ALTER TABLE submissions ADD COLUMN age INTEGER', (err) => {
           if (err && !err.message.includes('duplicate')) {
-            console.error('添加 gender 列失败:', err.message);
+            console.error('添加 age 列失败:', err.message);
           }
         });
       }
@@ -40,15 +41,15 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
 });
 
 app.post('/api/submit', (req, res) => {
-  const { name, gender, email, message } = req.body;
+  const { name, gender, age, email, message } = req.body;
   
   if (!name || !gender || !email || !message) {
     return res.status(400).json({ error: '请填写所有必填字段' });
   }
   
-  const sql = 'INSERT INTO submissions (name, gender, email, message) VALUES (?, ?, ?, ?)';
+  const sql = 'INSERT INTO submissions (name, gender, age, email, message) VALUES (?, ?, ?, ?, ?)';
   
-  db.run(sql, [name, gender, email, message], function(err) {
+  db.run(sql, [name, gender, age, email, message], function(err) {
     if (err) {
       console.error('插入数据失败:', err.message);
       return res.status(500).json({ error: '提交失败，请稍后重试' });
