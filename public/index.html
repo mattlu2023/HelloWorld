@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>表单提交系统</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Microsoft YaHei', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+      font-size: 2.5em;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+
+    @media (max-width: 768px) {
+      .content-wrapper {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    .card h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+      font-size: 1.8em;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: bold;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 5px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 5px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+      background: white;
+      cursor: pointer;
+    }
+
+    .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 20px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .radio-option input[type="radio"] {
+      width: auto;
+      cursor: pointer;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 30px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .submissions-list {
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .submission-item {
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+    }
+
+    .submission-item h3 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 1.2em;
+    }
+
+    .submission-item p {
+      color: #555;
+      margin-bottom: 8px;
+      line-height: 1.6;
+    }
+
+    .submission-item .meta {
+      font-size: 12px;
+      color: #999;
+      margin-top: 10px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+
+    .empty-state p {
+      font-size: 1.2em;
+    }
+
+    .alert {
+      padding: 12px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .alert-success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .alert-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #667eea;
+    }
+
+    .refresh-btn {
+      background: #28a745;
+      margin-top: 15px;
+    }
+
+    .refresh-btn:hover {
+      box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 表单提交系统</h1>
+    
+    <div class="content-wrapper">
+      <div class="card">
+        <h2>提交表单</h2>
+        <div id="submitAlert" class="alert"></div>
+        <form id="submitForm">
+          <div class="form-group">
+            <label for="name">姓名 *</label>
+            <input type="text" id="name" name="name" required placeholder="请输入您的姓名">
+          </div>
+          <div class="form-group">
+            <label for="email">邮箱 *</label>
+            <input type="email" id="email" name="email" required placeholder="请输入您的邮箱">
+          </div>
+          <div class="form-group">
+            <label>性别 *</label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input type="radio" name="gender" value="男" required>
+                男
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="gender" value="女" required>
+                女
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="message">留言内容 *</label>
+            <textarea id="message" name="message" required placeholder="请输入您想说的话..."></textarea>
+          </div>
+          <button type="submit" class="btn">提交</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>已提交的表单</h2>
+        <div id="submissionsList" class="submissions-list">
+          <div class="loading">加载中...</div>
+        </div>
+        <button onclick="loadSubmissions()" class="btn refresh-btn">🔄 刷新列表</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const submitForm = document.getElementById('submitForm');
+    const submitAlert = document.getElementById('submitAlert');
+    const submissionsList = document.getElementById('submissionsList');
+
+    submitForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const selectedGender = document.querySelector('input[name="gender"]:checked');
+      
+      const formData = {
+        name: document.getElementById('name').value,
+        gender: selectedGender ? selectedGender.value : '',
+        email: document.getElementById('email').value,
+        message: document.getElementById('message').value
+      };
+
+      try {
+        const response = await fetch('/api/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          showAlert('提交成功！', 'success');
+          submitForm.reset();
+          loadSubmissions();
+        } else {
+          showAlert(result.error || '提交失败，请稍后重试', 'error');
+        }
+      } catch (error) {
+        showAlert('网络错误，请稍后重试', 'error');
+      }
+    });
+
+    function showAlert(message, type) {
+      submitAlert.textContent = message;
+      submitAlert.className = `alert alert-${type}`;
+      submitAlert.style.display = 'block';
+      
+      setTimeout(() => {
+        submitAlert.style.display = 'none';
+      }, 3000);
+    }
+
+    async function loadSubmissions() {
+      try {
+        const response = await fetch('/api/submissions');
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          displaySubmissions(result.data);
+        } else {
+          submissionsList.innerHTML = '<div class="empty-state"><p>加载失败</p></div>';
+        }
+      } catch (error) {
+        submissionsList.innerHTML = '<div class="empty-state"><p>网络错误</p></div>';
+      }
+    }
+
+    function displaySubmissions(submissions) {
+      if (submissions.length === 0) {
+        submissionsList.innerHTML = '<div class="empty-state"><p>暂无提交记录</p></div>';
+        return;
+      }
+
+      submissionsList.innerHTML = submissions.map(item => `
+        <div class="submission-item">
+          <h3>${escapeHtml(item.name)} ${item.gender ? `<span style="font-size: 0.8em; color: #999; margin-left: 10px;">(${item.gender})</span>` : ''}</h3>
+          <p><strong>邮箱:</strong> ${escapeHtml(item.email)}</p>
+          <p><strong>留言:</strong> ${escapeHtml(item.message)}</p>
+          <div class="meta">提交时间：${formatDate(item.created_at)}</div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    loadSubmissions();
+  </script>
+</body>
+</html>
