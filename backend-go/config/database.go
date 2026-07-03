@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"sync"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// Config 配置结构
 type Config struct {
 	DBHost     string
 	DBPort     string
@@ -16,12 +17,69 @@ type Config struct {
 	DBPassword string
 	DBName     string
 	Port       string
+	JWTSecret  string
 }
 
-// 全局数据库连接
+// DatabaseManager 管理数据库连接的单例管理器
+type DatabaseManager struct {
+	db   *sql.DB
+	once sync.Once
+}
+
+var manager *DatabaseManager
+
+func init() {
+	manager = &DatabaseManager{}
+}
+
+// GetManager 获取数据库管理器实例
+func GetManager() *DatabaseManager {
+	return manager
+}
+
+// Init 初始化数据库连接
+func (m *DatabaseManager) Init(cfg *Config) error {
+	var err error
+	m.once.Do(func() {
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+			cfg.DBUser,
+			cfg.DBPassword,
+			cfg.DBHost,
+			cfg.DBPort,
+			cfg.DBName,
+		)
+
+		m.db, err = sql.Open("mysql", dsn)
+		if err != nil {
+			err = fmt.Errorf("打开数据库连接失败：%w", err)
+			return
+		}
+
+		m.db.SetMaxOpenConns(100)
+		m.db.SetMaxIdleConns(10)
+		m.db.SetConnMaxLifetime(time.Hour)
+		m.db.SetConnMaxIdleTime(10 * time.Minute)
+
+		if pingErr := m.db.Ping(); pingErr != nil {
+			err = fmt.Errorf("数据库连接失败：%w", pingErr)
+			return
+		}
+
+		fmt.Println("数据库连接成功")
+	})
+	return err
+}
+
+// GetDB 获取数据库连接
+func (m *DatabaseManager) GetDB() *sql.DB {
+	return m.db
+}
+
+// 向后兼容的函数，供现有代码使用
+// 推荐使用 GetManager().GetDB() 替代
+
 var DB *sql.DB
 
-// LoadConfig 加载配置
 func LoadConfig() *Config {
 	return &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
@@ -30,35 +88,19 @@ func LoadConfig() *Config {
 		DBPassword: getEnv("DB_PASSWORD", "root"),
 		DBName:     getEnv("DB_NAME", "ad_bi_system"),
 		Port:       getEnv("PORT", "8080"),
+		JWTSecret:  getEnv("JWT_SECRET", "ad-bi-jwt-secret-key"),
 	}
 }
 
-// InitDatabase 初始化数据库连接
 func InitDatabase(cfg *Config) error {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		cfg.DBUser,
-		cfg.DBPassword,
-		cfg.DBHost,
-		cfg.DBPort,
-		cfg.DBName,
-	)
-
-	var err error
-	DB, err = sql.Open("mysql", dsn)
-	if err != nil {
-		return fmt.Errorf("打开数据库连接失败：%w", err)
+	if err := GetManager().Init(cfg); err != nil {
+		return err
 	}
-
-	// 测试连接
-	if err := DB.Ping(); err != nil {
-		return fmt.Errorf("数据库连接失败：%w", err)
-	}
-
-	fmt.Println("数据库连接成功")
+	// 更新全局变量以保持向后兼容
+	DB = GetManager().GetDB()
 	return nil
 }
 
-// getEnv 获取环境变量，如果不存在则返回默认值
 func getEnv(key, defaultValue string) string {
 	value := os.Getenv(key)
 	if value == "" {
@@ -67,7 +109,8 @@ func getEnv(key, defaultValue string) string {
 	return value
 }
 
-// GetDB 获取数据库连接
+// GetDB 获取数据库连接（向后兼容）
+// 新代码应使用 config.GetManager().GetDB()
 func GetDB() *sql.DB {
-	return DB
+	return GetManager().GetDB()
 }
