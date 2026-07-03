@@ -1,5 +1,7 @@
 package main
 
+// 广告BI系统后端服务入口文件，基于Gin框架构建RESTful API
+
 import (
 	"ad-bi-backend/config"
 	"ad-bi-backend/handlers"
