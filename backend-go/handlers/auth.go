@@ -2,33 +2,45 @@ package handlers
 
 import (
 	"ad-bi-backend/config"
+	"ad-bi-backend/utils"
 	"database/sql"
+	"log"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-// LoginRequest 登录请求
 type LoginRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
-// Login 用户登录
+type APIResponse struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
+type PaginationResponse struct {
+	List       interface{} `json:"list"`
+	Page       int         `json:"page"`
+	PageSize   int         `json:"page_size"`
+	Total      int64       `json:"total"`
+	TotalPages int         `json:"total_pages"`
+}
+
 func Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "请求参数错误",
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Code:    400,
+			Message: "请求参数错误：用户名和密码均为必填项",
 		})
 		return
 	}
 
-	// 查询用户
 	db := config.GetDB()
-	var userID int
+	var userID int64
 	var storedPassword string
 	err := db.QueryRow(
 		"SELECT id, password FROM users WHERE username = ?",
@@ -36,36 +48,43 @@ func Login(c *gin.Context) {
 	).Scan(&userID, &storedPassword)
 
 	if err == sql.ErrNoRows {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"code":    401,
-			"message": "用户名或密码错误",
+		c.JSON(http.StatusUnauthorized, APIResponse{
+			Code:    401,
+			Message: "用户名或密码错误",
 		})
 		return
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "查询失败",
+		log.Printf("查询用户信息失败: %v", err)
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Code:    500,
+			Message: "查询用户信息失败，请稍后重试",
 		})
 		return
 	}
 
-	// 简单密码验证（实际应该用 bcrypt 等加密）
-	if storedPassword != req.Password {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"code":    401,
-			"message": "用户名或密码错误",
+	if !utils.VerifyPassword(storedPassword, req.Password) {
+		c.JSON(http.StatusUnauthorized, APIResponse{
+			Code:    401,
+			Message: "用户名或密码错误",
 		})
 		return
 	}
 
-	// 生成 Token（实际应该用 JWT）
-	token := "sample_token_" + time.Now().Format("20060102150405")
+	token, err := utils.GenerateToken(userID, req.Username)
+	if err != nil {
+		log.Printf("生成Token失败: %v", err)
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Code:    500,
+			Message: "生成认证令牌失败，请稍后重试",
+		})
+		return
+	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    0,
-		"message": "登录成功",
-		"data": gin.H{
+	c.JSON(http.StatusOK, APIResponse{
+		Code:    0,
+		Message: "登录成功",
+		Data: gin.H{
 			"user_id":  userID,
 			"username": req.Username,
 			"token":    token,
@@ -73,38 +92,65 @@ func Login(c *gin.Context) {
 	})
 }
 
-// Register 用户注册
 func Register(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "请求参数错误",
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Code:    400,
+			Message: "请求参数错误：用户名和密码均为必填项",
 		})
 		return
 	}
 
 	db := config.GetDB()
-	
-	// 插入用户
+
+	var existingID int64
+	err := db.QueryRow("SELECT id FROM users WHERE username = ?", req.Username).Scan(&existingID)
+	if err == nil {
+		c.JSON(http.StatusConflict, APIResponse{
+			Code:    409,
+			Message: "用户名已存在，请选择其他用户名",
+		})
+		return
+	}
+	if err != sql.ErrNoRows {
+		log.Printf("查询用户名是否存在失败: %v", err)
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Code:    500,
+			Message: "查询用户名失败，请稍后重试",
+		})
+		return
+	}
+
+	hashedPassword, err := utils.HashPassword(req.Password)
+	if err != nil {
+		log.Printf("密码加密失败: %v", err)
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Code:    500,
+			Message: "密码加密失败，请稍后重试",
+		})
+		return
+	}
+
 	result, err := db.Exec(
 		"INSERT INTO users (username, password) VALUES (?, ?)",
-		req.Username, req.Password,
+		req.Username, hashedPassword,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "注册失败",
+		log.Printf("创建用户失败: %v", err)
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Code:    500,
+			Message: "创建用户失败，请稍后重试",
 		})
 		return
 	}
 
 	userID, _ := result.LastInsertId()
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    0,
-		"message": "注册成功",
-		"data": gin.H{
+	c.JSON(http.StatusOK, APIResponse{
+		Code:    0,
+		Message: "注册成功",
+		Data: gin.H{
 			"user_id": userID,
 		},
 	})

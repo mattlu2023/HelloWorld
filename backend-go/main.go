@@ -6,6 +6,7 @@ import (
 	"ad-bi-backend/config"
 	"ad-bi-backend/handlers"
 	"ad-bi-backend/middleware"
+	"ad-bi-backend/utils"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +16,9 @@ func main() {
 	// 入口阶段只做固定成本的初始化工作：加载配置、建立数据库连接、注册路由。
 	// 这里不承载业务逻辑，便于后续定位性能瓶颈时把注意力集中在 handler 和数据库查询上。
 	cfg := config.LoadConfig()
+
+	// 初始化JWT密钥，确保后续Token生成和验证使用正确的密钥
+	utils.SetJWTSecret(cfg.JWTSecret)
 
 	// 启动时预先验证数据库可用性，避免服务监听成功后才在首个请求上暴露连接问题。
 	if err := config.InitDatabase(cfg); err != nil {
