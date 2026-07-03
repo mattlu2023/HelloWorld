@@ -114,3 +114,9 @@ func getEnv(key, defaultValue string) string {
 func GetDB() *sql.DB {
 	return GetManager().GetDB()
 }
+
+// SetDB 设置数据库连接（仅供测试使用）
+func SetDB(db *sql.DB) {
+	manager.db = db
+	DB = db
+}
